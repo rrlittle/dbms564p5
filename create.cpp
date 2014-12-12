@@ -9,40 +9,40 @@ const Status RelCatalog::createRel(const string & relName,
   RelDesc rd;
   AttrDesc ad;
   Record rec;
-  HeapFile hf;
-
-  if (relation.empty() || attrCnt < 1)
+  
+  if (relName.empty() || attrCnt < 1)
     return BADCATPARM;
 
-  if (relation.length() >= sizeof rd.relName)
+  if (relName.length() >= sizeof rd.relName)
     return NAMETOOLONG;
 
 //check if relation already exists. 
-	status = relCat->getInfo(relName, &rec);
+	status = relCat->getInfo((const string &)relName, rd);
 	if(status == FILEEOF){//if it does not exist
 		
 		//initialize relDesc. 
-		rd.relname = relName;
+		memcpy(&rd.relName[0], &relName, sizeof(relName));
 		rd.attrCnt = attrCnt;
 		
-		status = relCat->addInfo(&rd);
+		status = relCat->addInfo(rd);
 		if(status != OK){return status;}
 		
 		int cnt;
 		for (cnt = 0; cnt < attrCnt; cnt++){
 			//initialize attrDesc
-				ad.relName = attrList[cnt].attrName;
-				ad.attrName = attrList[cnt].attrName;
+				
+				memcpy(ad.relName,attrList[cnt].relName, sizeof(attrList[cnt].relName));
+				memcpy(ad.relName,attrList[cnt].attrName, sizeof(attrList[cnt].attrName));
 				ad.attrOffset = cnt * sizeof(attrList[cnt].attrType);
 				ad.attrLen = attrList[cnt].attrLen;
 				
 				//insert the newly initialized attrDesc
-				status = attrCat->addInfo(&ad);
+				status = attrCat->addInfo(ad);
 				if(status != OK){return status;}
 		} 
 		
 		//each relation is a table, so it needs a corresponding file to store tuples. 
-		hf = new HeapFile(relName, &status);
+		HeapFile * hf = new HeapFile(relName, status);
 		if(status != OK){return status;}
 		
 		
