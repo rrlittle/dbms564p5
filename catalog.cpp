@@ -48,9 +48,13 @@ const Status RelCatalog::addInfo(RelDesc & record)
   RID rid;
   InsertFileScan*  ifs;
   Status status;
+  
+  ifs = new InsertFileScan(RELCATNAME, &status);
+  
+  status = ifs->insertRecord(record, &rid);
+  if(status != OK){return status;}
 
-
-
+  return OK;
 
 }
 
