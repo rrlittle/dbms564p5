@@ -19,7 +19,7 @@ const Status RelCatalog::getInfo(const string & relName, RelDesc &record)
   HeapFileScan * hfs;
 
 	//open a new heapfile scan
-	hfs = new HeapFileScan(relName, status);
+	hfs = new HeapFileScan(RELCATNAME, status);
 	if(status != OK){return status;}
 	
 	status = hfs->startScan(0, //const int offset, 0 for the first attribute
@@ -121,7 +121,7 @@ AttrCatalog::AttrCatalog(Status &status) :
 }
 
 
-const Status AttrCatalog::getInfo(const string & relation, 
+const Status AttrCatalog::getInfo(const string & relName, 
 				  const string & attrName,
 				  AttrDesc &record)
 {
@@ -131,16 +131,35 @@ const Status AttrCatalog::getInfo(const string & relation,
   Record rec;
   HeapFileScan*  hfs;
 
-  if (relation.empty() || attrName.empty()) return BADCATPARM;
+  if (relName.empty() || attrName.empty()) return BADCATPARM;
 
+	//open a new heapfile scan
+	hfs = new HeapFileScan(ATTRCATNAME, status);
+	if(status != OK){return status;}
 	
+	status = hfs->startScan(sizeof(STRING), //const int offset, 1 for thesecond attribute
+                           	MAXNAME,//const int length, 
+                           	STRING,//const Datatype type, attribute 2 is a string 
+                           	(const char *)&attrName,//const char* filter, scan over records the first record matching relName. 
+                           	EQ//const Operator op, we are checking for equality
+        										);
+        //go to the next record
+        status = hfs->scanNext(rid);
+        if(status != OK){return status;}
+        //get the record. 
+        //rec now points to the record and rid points to its rid
+        status = hfs->getRecord(rec);
+        if(status != OK){return status;}
+        
+        memcpy(&record, &rec, sizeof(Record)); //copy the data to record without returning  apointer to the actual record. 
+        
+        //close the scan
+        status = hfs->endScan();
+        if(status != OK){return status;}
+  			      
+        //everything executed ok
+        return OK;
 	
-	  
-  
-  
-
-
-
 }
 
 
