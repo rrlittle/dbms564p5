@@ -19,7 +19,7 @@ const Status UT_Load(const string & relation, const string & fileName)
   RelDesc rd;
   AttrDesc *attrs;
   int attrCnt;
-  InsertFileScan * iFile;
+  InsertFileScan * ifs;
   int width = 0;
 
   if (relation.empty() || fileName.empty() || relation == string(RELCATNAME)
@@ -33,17 +33,16 @@ const Status UT_Load(const string & relation, const string & fileName)
     return UNIXERR;
 
   // get relation data
-
-
-
+	status = relCat->getInfo(relation, rd);
+	if(status != OK){return status;}
+	
+	
 
   // start insertFileScan on relation
-
-
-
-
-
-
+	ifs = new InsertFileScan(relation, status);
+	if(status != OK){return status;}
+	
+	
 
 
   // allocate buffer to hold record read from unix file
@@ -59,7 +58,7 @@ const Status UT_Load(const string & relation, const string & fileName)
     RID rid;
     rec.data = record;
     rec.length = width;
-    if ((status = iFile->insertRecord(rec, rid)) != OK) return status;
+    if ((status = ifs->insertRecord(rec, rid)) != OK) return status;
     records++;
   }
 
