@@ -10,7 +10,7 @@ RelCatalog::RelCatalog(Status &status) :
 //TODO check for multiple returns
 const Status RelCatalog::getInfo(const string & relName, RelDesc &record)
 {
-  if (relation.empty())
+  if (relName.empty())
     return BADCATPARM;
 
   Status status;
@@ -19,24 +19,24 @@ const Status RelCatalog::getInfo(const string & relName, RelDesc &record)
   HeapFileScan * hfs;
 
 	//open a new heapfile scan
-	hfs = new HeapFileScan(relation, &status);
+	hfs = new HeapFileScan(relName, status);
 	if(status != OK){return status;}
 	
-	status = hfs->startscan(0, //const int offset, 0 for the first attribute
+	status = hfs->startScan(0, //const int offset, 0 for the first attribute
                            	MAXNAME,//const int length, 
-                           	INTEGER,//const Datatype type, Relcat has 4 integers 
-                           	relName,//const char* filter, scan over records the first record matching relName. 
+                           	STRING,//const Datatype type, attribute 1 is a string 
+                           	(const char *)&relName,//const char* filter, scan over records the first record matching relName. 
                            	EQ//const Operator op, we are checking for equality
         										);
         //go to the next record
-        status = hfs->scanNext(&rid);
+        status = hfs->scanNext(rid);
         if(status != OK){return status;}
         //get the record. 
         //rec now points to the record and rid points to its rid
-        status = hfs->getRecord(&rec);
+        status = hfs->getRecord(rec);
         if(status != OK){return status;}
         
-        record = memcpy(dest, &rec, sizeof(Record)); //copy the data to record without returning  apointer to the actual record. 
+        record = *(RelDesc *) memcpy(&record, &rec, sizeof(Record)); //copy the data to record without returning  apointer to the actual record. 
         
         //close the scan
         status = hfs->endScan();
@@ -48,17 +48,21 @@ const Status RelCatalog::getInfo(const string & relName, RelDesc &record)
 }
 
 
-const Status RelCatalog::addInfo(RelDesc & record)
+const Status RelCatalog::addInfo(RelDesc & recDesc)
 {
   RID rid;
   InsertFileScan*  ifs;
   Status status;
+  Record rec;
   
   //start a new insert filescan to manage inserting the record
-  ifs = new InsertFileScan(RELCATNAME, &status);
+  ifs = new InsertFileScan(RELCATNAME, status);
+  
+  rec.data = &recDesc;
+  rec.length = sizeof(recDesc);
   
   //insetr the record into relCat
-  status = ifs->insertRecord(record, &rid);
+  status = ifs->insertRecord(rec, rid);
   if(status != OK){return status;}
 
 	///everything returned OK
@@ -73,22 +77,22 @@ const Status RelCatalog::removeInfo(const string & relName)
   RID rid;
   HeapFileScan*  hfs;
 
-  if (relation.empty()) return BADCATPARM;
+  if (relName.empty()) return BADCATPARM;
 
 	//open a new heapfile scan
-	hfs = new HeapFileScan(relation, &status);
+	hfs = new HeapFileScan(RELCATNAME, status);
 	if(status != OK){return status;}
 
 	
-	status = hfs->startscan(0, //const int offset, 0 for the first attribute
+	status = hfs->startScan(0, //const int offset, 0 for the first attribute
                          	MAXNAME,//const int length, 
-                         	INTEGER,//const Datatype type, Relcat has 4 integers 
-                         	relName,//const char* filter, scan over all the tuples matching relName. 
+                         	STRING,//const Datatype type, attribute 1 is a string 
+                         	(const char *)&relName,//const char* filter, scan over all the tuples matching relName. 
                          	EQ//const Operator op, we are checking for equality
   												);
   												
    //go to the next record
-  status = hfs->scanNext(&rid);
+  status = hfs->scanNext(rid);
   if(status != OK){return status;}
 	
 	status = hfs->deleteRecord();
