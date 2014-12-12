@@ -41,7 +41,7 @@ const Status RelCatalog::getInfo(const string & relName, RelDesc &record)
         //close the scan
         status = hfs->endScan();
         if(status != OK){return status;}
-  			      
+  			delete hfs;
         //everything executed ok
         return OK;
 		
@@ -65,6 +65,8 @@ const Status RelCatalog::addInfo(RelDesc & recDesc)
   status = ifs->insertRecord(rec, rid);
   if(status != OK){return status;}
 
+	delete ifs;
+	
 	///everything returned OK
   return OK;
 
@@ -101,7 +103,7 @@ const Status RelCatalog::removeInfo(const string & relName)
 	//CLOSE HFS
 	status = hfs->endScan();
   if(status != OK){return status;}
-	
+	delete hfs;
 	
 	//everything returned ok
 	return OK;	
@@ -156,22 +158,35 @@ const Status AttrCatalog::getInfo(const string & relName,
         //close the scan
         status = hfs->endScan();
         if(status != OK){return status;}
-  			      
+  			delete hfs;
         //everything executed ok
         return OK;
 	
 }
 
 
-const Status AttrCatalog::addInfo(AttrDesc & record)
+const Status AttrCatalog::addInfo(AttrDesc & recDesc)
 {
   RID rid;
   InsertFileScan*  ifs;
   Status status;
+	Record rec;
+	
+	//start a new insert filescan to manage inserting the record
+  ifs = new InsertFileScan(ATTRCATNAME, status);
+  if(status != OK){return status;}
 
+  rec.data = &recDesc;
+  rec.length = sizeof(recDesc);
+  
+  //insetr the record into relCat
+  status = ifs->insertRecord(rec, rid);
+  if(status != OK){return status;}
+  
+  delete ifs;
 
-
-
+	///everything returned OK
+  return OK;
 
 }
 
@@ -186,6 +201,33 @@ const Status AttrCatalog::removeInfo(const string & relation,
   HeapFileScan*  hfs;
 
   if (relation.empty() || attrName.empty()) return BADCATPARM;
+
+	//open a new heapfile scan
+	hfs = new HeapFileScan(ATTRCATNAME, status);
+	if(status != OK){return status;}
+
+	
+	status = hfs->startScan(0, //const int offset, 0 for the first attribute
+                         	MAXNAME,//const int length, 
+                         	STRING,//const Datatype type, attribute 1 is a string 
+                         	(const char *)&attrName,//const char* filter, scan over all the tuples matching relName. 
+                         	EQ//const Operator op, we are checking for equality
+  												);
+  												
+   //go to the next record
+  status = hfs->scanNext(rid);
+  if(status != OK){return status;}
+	
+	status = hfs->deleteRecord();
+  if(status != OK){return status;}
+	
+	//CLOSE HFS
+	status = hfs->endScan();
+  if(status != OK){return status;}
+	delete hfs;
+	
+	//everything returned ok
+	return OK;	
 
 }
 
