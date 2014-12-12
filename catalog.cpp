@@ -94,6 +94,11 @@ const Status RelCatalog::removeInfo(const string & relName)
 	status = hfs->deleteRecord();
   if(status != OK){return status;}
 	
+	//CLOSE HFS
+	status = hfs->endScan();
+  if(status != OK){return status;}
+	
+	
 	//everything returned ok
 	return OK;	
 }
