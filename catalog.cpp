@@ -41,7 +41,7 @@ const Status RelCatalog::getInfo(const string & relName, RelDesc &record)
         //close the scan
         status = hfs->endScan();
         if(status != OK){return status;}
-  			~hfs;      
+  			      
         //everything executed ok
         return OK;
 		
@@ -100,8 +100,7 @@ const Status RelCatalog::removeInfo(const string & relName)
 	
 	//CLOSE HFS
 	status = hfs->endScan();
-  if(status != OK){return status;}
-  ~hfs;
+  if(status != OK){return 
 	
 	
 	//everything returned ok
